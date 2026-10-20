@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de Algoritmo Genético · Projetos do campus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topo">
+  <div>
+    <h1>Simulador de algoritmo genético</h1>
+    <p>Escolha de projetos de melhoria do campus com orçamento limitado</p>
+  </div>
+  <a id="link-repo" href="https://github.com/ItalloM3/simulador-algoritmo-genetico-ia" target="_blank" rel="noopener">Código-fonte no GitHub</a>
+</header>
+
+<div class="app">
+  <!-- ================= CONFIGURAÇÃO ================= -->
+  <aside>
+    <fieldset id="cfg" class="painel">
+      <h2>Projetos e orçamento</h2>
+      <div class="proj cab"><span></span><span>Nome</span><span>Custo (R$)</span><span>Benefício</span><span></span></div>
+      <div id="lista-proj"></div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:12px">
+        <button type="button" class="btn" id="btn-add">Adicionar projeto</button>
+        <span class="contador" id="cont-proj"></span>
+      </div>
+
+      <div class="sep"></div>
+      <div class="campo largo">
+        <label for="orc">Orçamento disponível (R$)</label>
+        <input type="text" id="orc" inputmode="decimal" value="7000.00" autocomplete="off">
+        <small class="dica">Valor não negativo, até 2 casas decimais.</small>
+        <small class="err" id="err-orc"></small>
+      </div>
+
+      <div class="sep"></div>
+      <h2>Parâmetros do algoritmo</h2>
+      <div class="params">
+        <div class="campo"><label for="pop">Tamanho da população</label>
+          <input type="text" id="pop" inputmode="numeric" value="20" autocomplete="off">
+          <small class="dica">Inteiro ≥ 2.</small><small class="err" id="err-pop"></small></div>
+        <div class="campo"><label for="ger">Número de gerações</label>
+          <input type="text" id="ger" inputmode="numeric" value="50" autocomplete="off">
+          <small class="dica">Inteiro ≥ 1. A população inicial é a geração 0.</small><small class="err" id="err-ger"></small></div>
+      </div>
+
+      <details class="fino" id="fino">
+        <summary>Ajuste fino<small id="resumo-fino"></small></summary>
+        <div class="params">
+          <div class="campo"><label for="cx">Taxa de cruzamento (%)</label>
+            <input type="text" id="cx" inputmode="decimal" value="80" autocomplete="off">
+            <small class="dica">0 a 100, aplicada por par de pais.</small><small class="err" id="err-cx"></small></div>
+          <div class="campo"><label for="mut">Taxa de mutação (%)</label>
+            <input type="text" id="mut" inputmode="decimal" value="5" autocomplete="off">
+            <small class="dica">0 a 100, aplicada por gene.</small><small class="err" id="err-mut"></small></div>
+          <div class="campo"><label for="tor">Tamanho do torneio</label>
+            <input type="text" id="tor" inputmode="numeric" value="2" autocomplete="off">
+            <small class="dica" id="dica-tor">Inteiro entre 2 e o tamanho da população.</small><small class="err" id="err-tor"></small></div>
+          <div class="campo"><label for="eli">Indivíduos de elite</label>
+            <input type="text" id="eli" inputmode="numeric" value="1" autocomplete="off">
+            <small class="dica" id="dica-eli">Inteiro entre 0 e população − 1.</small><small class="err" id="err-eli"></small></div>
+          <div class="campo largo"><label for="seed">Semente aleatória</label>
+            <input type="text" id="seed" inputmode="numeric" value="42" autocomplete="off">
+            <small class="dica">Inteiro. A mesma semente, dados e parâmetros reproduzem a execução.</small><small class="err" id="err-seed"></small></div>
+        </div>
+      </details>
+    </fieldset>
+  </aside>
+
+  <!-- ================= PRINCIPAL ================= -->
+  <main>
+    <div class="controles" role="toolbar" aria-label="Controles da execução">
+      <button type="button" class="btn prim" id="btn-exec">Executar</button>
+      <button type="button" class="btn" id="btn-pausa">Pausar</button>
+      <button type="button" class="btn" id="btn-passo">Avançar uma geração</button>
+      <button type="button" class="btn" id="btn-reset">Reiniciar</button>
+      <span class="esp"></span>
+      <label>Velocidade
+        <select id="veloc">
+          <option value="1800">Lenta</option>
+          <option value="700" selected>Normal</option>
+          <option value="150">Rápida</option>
+          <option value="0">Máxima</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="chk-anim" checked> Animar operações</label>
+      <span class="estado" id="estado" role="status">Pronto</span>
+    </div>
+    <div class="aviso" id="aviso" hidden></div>
+
+    <section class="monitor" aria-label="Monitorização">
+      <div><div class="r">Geração atual</div><div class="n" id="m-gen">0</div><div class="r" id="m-gen-de">de 50</div><div class="barra"><i id="m-barra"></i></div></div>
+      <div><div class="r">Melhor aptidão da geração</div><div class="n" id="m-melhor">0</div></div>
+      <div><div class="r">Aptidão média</div><div class="n" id="m-media">0</div></div>
+      <div><div class="r">Melhor acumulado</div><div class="n" id="m-acum">0</div></div>
+    </section>
+
+    <section class="painel" aria-labelledby="h-sol">
+      <h2 id="h-sol">Melhor solução encontrada <span class="tag" id="tag-final" hidden>resultado final</span></h2>
+      <div class="sol" id="sol"></div>
+    </section>
+
+    <section class="painel" aria-label="Detalhes da execução">
+      <div class="abas" role="tablist">
+        <button class="aba" role="tab" id="t-anim" aria-selected="true" aria-controls="p-anim">Animação</button>
+        <button class="aba" role="tab" id="t-graf" aria-selected="false" aria-controls="p-graf">Gráfico</button>
+        <button class="aba" role="tab" id="t-log" aria-selected="false" aria-controls="p-log">Log da geração</button>
+        <button class="aba" role="tab" id="t-hist" aria-selected="false" aria-controls="p-hist">Histórico</button>
+        <button class="aba" role="tab" id="t-pop" aria-selected="false" aria-controls="p-pop">População</button>
+        <button class="aba" role="tab" id="t-test" aria-selected="false" aria-controls="p-test">Testes de validação</button>
+      </div>
+
+      <div class="aba-conteudo" id="p-anim" role="tabpanel">
+        <div class="palco-ctl">
+          <label for="sel-ev" class="sr">Evento da geração</label>
+          <select id="sel-ev"></select>
+          <button type="button" class="btn" id="a-ant" aria-label="Etapa anterior">‹ Etapa</button>
+          <button type="button" class="btn" id="a-play">Reproduzir</button>
+          <button type="button" class="btn" id="a-prox" aria-label="Próxima etapa">Etapa ›</button>
+          <span class="contador" id="a-cont"></span>
+        </div>
+        <div class="palco" id="palco"><p class="vazio">Avance uma geração para ver as operações.</p></div>
+        <div class="legenda">
+          <span class="lg-o1">segmento do pai 1</span><span class="lg-o2">segmento do pai 2</span>
+          <span class="lg-cut">ponto de corte</span><span class="lg-mut">bit mutado</span><span class="lg-rem">projeto removido na reparação</span>
+        </div>
+      </div>
+
+      <div class="aba-conteudo grafico" id="p-graf" role="tabpanel" hidden>
+        <div class="leg"><span class="s1">Melhor acumulado</span><span class="s2">Melhor da geração</span><span class="s3">Aptidão média</span></div>
+        <svg id="graf" viewBox="0 0 640 250" role="img" aria-label="Gráfico da aptidão por geração"></svg>
+      </div>
+
+      <div class="aba-conteudo" id="p-log" role="tabpanel" hidden>
+        <div class="nav-ger">
+          <button type="button" class="btn" id="g-ant">‹</button>
+          <label for="g-num">Geração</label><input type="text" id="g-num" inputmode="numeric" value="0">
+          <button type="button" class="btn" id="g-prox">›</button>
+          <button type="button" class="btn" id="g-copiar">Copiar log completo</button>
+          <span class="contador">Clique em um evento para animá-lo. Indivíduos são numerados a partir de 1.</span>
+        </div>
+        <div id="log"></div>
+      </div>
+
+      <div class="aba-conteudo" id="p-hist" role="tabpanel" hidden>
+        <div class="rolagem"><table>
+          <thead><tr><th>Geração</th><th>Melhor da geração</th><th>Aptidão média</th><th>Melhor acumulado</th></tr></thead>
+          <tbody id="hist"></tbody></table></div>
+      </div>
+
+      <div class="aba-conteudo" id="p-pop" role="tabpanel" hidden>
+        <p class="contador" id="pop-nota"></p>
+        <div class="rolagem"><table>
+          <thead><tr><th>#</th><th>Cromossomo</th><th>Projetos escolhidos</th><th>Custo</th><th>Benefício</th><th>Saldo</th><th>Aptidão</th></tr></thead>
+          <tbody id="pop-tab"></tbody></table></div>
+      </div>
+
+      <div class="aba-conteudo" id="p-test" role="tabpanel" hidden>
+        <p>Executa os testes da seção 6 com os quatro projetos de referência, sem alterar a simulação atual.</p>
+        <button type="button" class="btn prim" id="btn-testes">Executar testes</button>
+        <button type="button" class="btn" id="btn-copiar-testes" disabled>Copiar resultado para o README</button>
+        <div id="testes-out" class="testes" style="margin-top:18px"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
