@@ -23,24 +23,6 @@
   --mono: "Spline Sans Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #151E1A;
-    --surface: #1D2A24;
-    --ink: #E7ECE5;
-    --muted: #A5B1A7;
-    --line: #39483E;
-    --teal: #80B7A0;
-    --teal-ink: #14241D;
-    --amber: #D9A15E;
-    --mag: #E28AA7;
-    --red: #F08A6C;
-    --o1: #8CB3E0;
-    --o2: #E2A566;
-    --focus: #9DBEFF;
-    --ok: #91D2A8;
-  }
-}
 
 body {
   background: var(--bg);
@@ -558,6 +540,7 @@ details.fino > summary small {
     align-items: start;
   }
 }
+
 
 @media (min-width: 1050px) and (max-width: 1240px) {
   .app {
